@@ -1,23 +1,25 @@
 import java.util.Scanner;
-public class Hmm0 {
+public class Hmm1 {
 
     static int tranMatrixRow, tranMatrixCol, emisMatrixRow, emisMatrixCol, initialStateRow, initialStateCol = 0;
     static double[][] tranMatrix, emisMatrix, initialStateMatrix;
+    static int[] emissionSequence;
+
     static Scanner scanner = new Scanner(System.in);
 
     public static void readInput() {
 
-        tranMatrixRow = scanner.nextInt();
-        tranMatrixCol = scanner.nextInt();
-        tranMatrix = generateMatrix(tranMatrixRow, tranMatrixCol);
-        emisMatrixRow = scanner.nextInt();
-        emisMatrixCol = scanner.nextInt();
-        emisMatrix = generateMatrix(emisMatrixRow, emisMatrixCol);
+        tranMatrix = generateMatrix(scanner.nextInt(), scanner.nextInt());
 
-        initialStateRow = scanner.nextInt();
-        initialStateCol = scanner.nextInt();
-        initialStateMatrix = generateMatrix(initialStateRow, initialStateCol);
+        emisMatrix = generateMatrix(scanner.nextInt(), scanner.nextInt());
 
+        initialStateMatrix = generateMatrix(scanner.nextInt(), scanner.nextInt());
+
+        int emissionSequenceLength = scanner.nextInt();
+        emissionSequence = new int[emissionSequenceLength];
+        for(int i = 0; i < emissionSequence.length; i++) {
+          emissionSequence[i] = scanner.nextInt();
+        }
     }
 
 
@@ -61,24 +63,39 @@ public class Hmm0 {
         return matrix;
     }
 
+    static double calculateAlpha() {
+      double[][] alpha = new double[emissionSequence.length][tranMatrix.length];
 
-    public static double[][] getTranMatrix() {
-        return tranMatrix;
-    }
+      for(int i = 0; i < tranMatrix.length; i++) {
+        alpha[0][i] = initialStateMatrix[0][i]*emisMatrix[i][emissionSequence[0]];
+      }
 
-    public static double[][] getEmisMatrix() {
-        return emisMatrix;
-    }
+      for(int t = 1; t < emissionSequence.length; t++) {
+        for(int i = 0; i < tranMatrix.length; i++) {
+          double b = emisMatrix[i][emissionSequence[t]];
+          double sum = 0;
 
-    public static double[][] getInitialStateMatrix() {
-        return initialStateMatrix;
+          for(int j = 0; j < tranMatrix.length; j++) {
+            sum += tranMatrix[j][i]*alpha[t - 1][j];
+          }
+          alpha[t][i] = b * sum;
+        }
+      }
+
+      double sum = 0;
+      for(int i = 0; i < tranMatrix.length; i++) {
+        sum += alpha[emissionSequence.length - 1][i];
+        //System.out.println(alpha[i][alpha.length - 1]);
+      }
+      return sum;
     }
 
     public static void main(String args[]) {
         readInput();
-        double[][] test = matrixMult(getInitialStateMatrix(), getTranMatrix());
+        double[][] test = matrixMult(initialStateMatrix, tranMatrix);
         //System.out.println(printMatrix(test));
-        double[][] result = matrixMult(test, getEmisMatrix());
-        System.out.println(result.length + " " + result[0].length + " " + printMatrix(result));
+        // double[][] result = matrixMult(test, emisMatrix);
+        //System.out.println(result.length + " " + result[0].length + " " + printMatrix(result));
+        System.out.println(calculateAlpha());
     }
 }
