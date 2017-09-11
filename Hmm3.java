@@ -1,5 +1,5 @@
 import java.util.Scanner;
-public class Hmm1 {
+public class Hmm3 {
 
     static int tranMatrixRow, tranMatrixCol, emisMatrixRow, emisMatrixCol, initialStateRow, initialStateCol = 0;
     static double[][] tranMatrix, emisMatrix, initialStateMatrix;
@@ -63,7 +63,7 @@ public class Hmm1 {
         return matrix;
     }
 
-    static double calculateAlpha() {
+    static double[][] calculateAlpha() {
       double[][] alpha = new double[emissionSequence.length][tranMatrix.length];
 
       for(int i = 0; i < tranMatrix.length; i++) {
@@ -81,21 +81,97 @@ public class Hmm1 {
           alpha[t][i] = b * sum;
         }
       }
+      return alpha;
+    }
 
-      double sum = 0;
+    static double[][] calculateBeta() {
+      double[][] beta = new double[emissionSequence.length][tranMatrix.length];
+
+      //Initialise Beta
       for(int i = 0; i < tranMatrix.length; i++) {
-        sum += alpha[emissionSequence.length - 1][i];
-        //System.out.println(alpha[i][alpha.length - 1]);
+        //beta[emissionSequence.length][i] = 1;
+        beta[beta.length - 1][i] = 1;
       }
-      return sum;
+
+      for(int t = emissionSequence.length - 1; t >= 0; t++) {
+          for(int i = 0; i < tranMatrix.length; i++) {
+            double sum = 0;
+            for(int j = 0; j < tranMatrix.length; j++) {
+              sum += beta[t + 1][j]*emisMatrix[j][emissionSequence[t + 1]] * tranMatrix[i][j];
+            }
+            beta[t][i] = sum;
+          }
+        }
+        return beta;
+      }
+
+    static double[][][] calculateDiGamma() {
+      double[][][] diGamma = new double[emissionSequence.length][tranMatrix.length][tranMatrix.length];
+      double[][] alpha = calculateAlpha();
+      double[][] beta = calculateBeta();
+
+      for(int t = 0; t < emissionSequence.length; t++) {
+        for(int i = 0; i < tranMatrix.length; i++) {
+          for(int j = 0; j < tranMatrix.length; j++) {
+            double sum = 0;
+            for(int k = 0; k < tranMatrix.length; k++) {
+              sum += alpha[emissionSequence.length - 1][k];
+            }
+            diGamma[t][i][j] = (alpha[t][i]*tranMatrix[i][j]*emisMatrix[j][emissionSequence[t + 1]] * beta[t + 1][j]) / sum;
+          }
+        }
+      }
+
+      return diGamma;
+    }
+
+    static double[][] calculateGamma() {
+      double[][] gamma = new double[emissionSequence.length][tranMatrix.length];
+      double[][][] diGamma = calculateDiGamma();
+      for(int t = 0; t < emissionSequence.length; t++) {
+        for(int i = 0; i < tranMatrix.length; i++) {
+          double sum = 0;
+          for(int j = 0; j < tranMatrix.length; j++) {
+            sum += diGamma[t][i][j];
+          }
+          gamma[t][i] = sum;
+        }
+      }
+      return gamma;
+    }
+
+    static double[][] estimateTransitionMatrix() {
+      double[][] transitionMatrix = new double[tranMatrix.length][tranMatrix[0].length];
+      double[][][] diGamma = calculateDiGamma();
+      double[][] gamma = calculateGamma();
+
+      for(int i = 0; i < transitionMatrix.length; i++) {
+        for(int j = 0; j < transitionMatrix[0].length; j++) {
+          double sum1 = 0;
+          double sum2 = 0;
+          for(int t = 0; t < emissionSequence.length - 1; t++) {
+            sum1 += diGamma[t][i][j];
+            sum2 += gamma[t][i];
+          }
+          transitionMatrix[i][j] = sum1/sum2;
+        }
+      }
+
+      return estimateTransitionMatrix();
+    }
+
+    static double[][] estimateEmissionMatrix() {
+
+      return new double[1][1];
+
     }
 
     public static void main(String args[]) {
         readInput();
-        double[][] test = matrixMult(initialStateMatrix, tranMatrix);
+        //double[][] test = matrixMult(initialStateMatrix, tranMatrix);
         //System.out.println(printMatrix(test));
         // double[][] result = matrixMult(test, emisMatrix);
         //System.out.println(result.length + " " + result[0].length + " " + printMatrix(result));
-        System.out.println(calculateAlpha());
+        System.out.println(printMatrix(estimateTransitionMatrix()));
     }
 }
