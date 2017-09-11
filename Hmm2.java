@@ -19,7 +19,7 @@ public class Hmm2 {
 
        
        int emissionSequenceLength = scanner.nextInt();
-       stateSequence = new int[emissionSequenceLength];
+       stateSequence = new int[emissionSequenceLength]; 
        emissionSequence = new int[emissionSequenceLength];
         for(int i = 0; i < emissionSequence.length; i++) {
           emissionSequence[i] = scanner.nextInt();
@@ -50,39 +50,53 @@ public class Hmm2 {
         return result;
     }
 
+    public static void printList(int[] list) {
+        for(int i = 0; i < list.length; i++) {
+            System.out.print(list[i] + " ");
+            
+        }
+        System.out.print("\n");
+    }
+
 
     public static int[] viterbi() {
         double[][] delta = new double[emissionSequence.length][tranMatrix.length];
         double[][] delta_idx = new double[emissionSequence.length][tranMatrix.length];
-        for(int i = 0; i < delta.length; i++) {
+        // init delta
+        for(int i = 0; i < tranMatrix.length; i++) {
             delta[0][i] = emisMatrix[i][emissionSequence[0]] * initialStateMatrix[0][i];
         }
 
-        for(int t = 0; t < emissionSequence.length; t++) {
+        for(int t = 1; t < emissionSequence.length; t++) {
             for(int i = 0; i < tranMatrix.length; i++) {
-                double maximum = 0;
+                double max = 0;
                 for(int j = 0; j < tranMatrix.length; j++) {
-                    double current = 0;
-                    current = tranMatrix[j][i] * delta[t][j] * emisMatrix[i][emissionSequence[t]];
-                    if(current > maximum) {
-                        delta[t][i] = current;
-                        maximum = current;
+                    double k = tranMatrix[j][i] * delta[t-1][j] * emisMatrix[i][emissionSequence[t]];
+                    if(k > max) {
+                        max = k;
+                        delta[t][i] = max;
                         delta_idx[t][i] = j;
                     }
                 }
-            }        
+            }
         }
+        
+        printList(stateSequence);
 
-        double maximum = 0;
+        double max = 0;
         for(int j = 0; j < tranMatrix.length; j++) {
-            if(delta[tranMatrix.length-1][j] > maximum) {
-                maximum = delta[tranMatrix.length-1][j];
-                stateSequence[tranMatrix.length-1] = j;
-            }
-            for(int t = tranMatrix.length-2; t >= 0; t--) {
-                stateSequence[t] = (int) delta_idx[t][stateSequence[t+1]];
+            if(delta[stateSequence.length-1][j] > max) {
+                max = delta[stateSequence.length-1][j];
+                stateSequence[stateSequence.length-1] = j;
             }
         }
+        
+        printList(stateSequence);
+        for(int t = stateSequence.length-2; t >= 0; t--) {
+            stateSequence[t] = (int) delta_idx[t][stateSequence[t+1]];
+        }
+        
+        printList(stateSequence);
         return stateSequence;
     }
 
