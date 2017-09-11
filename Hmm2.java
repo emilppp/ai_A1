@@ -14,12 +14,12 @@ public class Hmm2 {
         emisMatrix = generateMatrix(scanner.nextInt(), scanner.nextInt());
 
         initialStateMatrix = generateMatrix(scanner.nextInt(), scanner.nextInt());
-        
-        
 
-       
+
+
+
        int emissionSequenceLength = scanner.nextInt();
-       stateSequence = new int[emissionSequenceLength]; 
+       stateSequence = new int[emissionSequenceLength];
        emissionSequence = new int[emissionSequenceLength];
         for(int i = 0; i < emissionSequence.length; i++) {
           emissionSequence[i] = scanner.nextInt();
@@ -53,7 +53,7 @@ public class Hmm2 {
     public static void printList(int[] list) {
         for(int i = 0; i < list.length; i++) {
             System.out.print(list[i] + " ");
-            
+
         }
         System.out.print("\n");
     }
@@ -69,19 +69,16 @@ public class Hmm2 {
 
         for(int t = 1; t < emissionSequence.length; t++) {
             for(int i = 0; i < tranMatrix.length; i++) {
-                double max = 0;
                 for(int j = 0; j < tranMatrix.length; j++) {
                     double k = tranMatrix[j][i] * delta[t-1][j] * emisMatrix[i][emissionSequence[t]];
-                    if(k > max) {
-                        max = k;
-                        delta[t][i] = max;
-                        delta_idx[t][i] = j;
+                    if(k > delta[t][i]) {
+                        //System.out.println("New maximum at index: " + j + ", will be inserted at row " + t+ ", column " + i);
+                        delta[t][i] = k;
+                        delta_idx[t - 1][i] = j;
                     }
                 }
             }
         }
-        
-        printList(stateSequence);
 
         double max = 0;
         for(int j = 0; j < tranMatrix.length; j++) {
@@ -90,13 +87,14 @@ public class Hmm2 {
                 stateSequence[stateSequence.length-1] = j;
             }
         }
-        
-        printList(stateSequence);
+
+        //System.out.println(printMatrix(delta));
+        //System.out.println(printMatrix(delta_idx));
+
         for(int t = stateSequence.length-2; t >= 0; t--) {
             stateSequence[t] = (int) delta_idx[t][stateSequence[t+1]];
         }
-        
-        printList(stateSequence);
+
         return stateSequence;
     }
 
