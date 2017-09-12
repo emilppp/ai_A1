@@ -3,6 +3,9 @@ public class Hmm3 {
 
     static int tranMatrixRow, tranMatrixCol, emisMatrixRow, emisMatrixCol, initialStateRow, initialStateCol = 0;
     static double[][] tranMatrix, emisMatrix, initialStateMatrix;
+    static double[][] alpha, beta, gamma;
+    static double[][][] diGamma;
+    static double[] c;
     static int[] emissionSequence;
 
     static Scanner scanner = new Scanner(System.in);
@@ -63,14 +66,24 @@ public class Hmm3 {
         return matrix;
     }
 
-    static double[][] calculateAlpha() {
-      double[][] alpha = new double[emissionSequence.length][tranMatrix.length];
+    static void calculateAlpha() {
+      //c0 for scaling
+      c = new double[emissionSequence.length];
+      c[0] = 0;
+      alpha = new double[emissionSequence.length][tranMatrix.length];
 
       for(int i = 0; i < tranMatrix.length; i++) {
-        alpha[0][i] = initialStateMatrix[0][i]*emisMatrix[i][emissionSequence[0]];
+        alpha[0][i] = emisMatrix[i][emissionSequence[0]] * initialStateMatrix[0][i];
+        c[0] += alpha[0][i];
+      }
+
+      c[0] = 1 / c[0];
+      for(int i = 0; i < tranMatrix.length; i++) {
+        alpha[0][i]*= c[0];
       }
 
       for(int t = 1; t < emissionSequence.length; t++) {
+        c[t] = 0;
         for(int i = 0; i < tranMatrix.length; i++) {
           double b = emisMatrix[i][emissionSequence[t]];
           double sum = 0;
@@ -79,36 +92,39 @@ public class Hmm3 {
             sum += tranMatrix[j][i]*alpha[t - 1][j];
           }
           alpha[t][i] = b * sum;
+          c[t] += alpha[t][i];
+        }
+
+        c[t] = 1 / c[t];
+
+        for(int i = 0; i < tranMatrix.length; i++) {
+          alpha[t][i]*= c[t];
         }
       }
-      return alpha;
     }
 
-    static double[][] calculateBeta() {
-      double[][] beta = new double[emissionSequence.length][tranMatrix.length];
-
-      //Initialise Beta
+    static void calculateBeta() {
+      beta = new double[emissionSequence.length][tranMatrix.length];
       for(int i = 0; i < tranMatrix.length; i++) {
-        //beta[emissionSequence.length][i] = 1;
-        beta[beta.length - 1][i] = 1;
+        beta[emissionSequence.length - 1][i] = c[emissionSequence.length - 1];
       }
 
       for(int t = emissionSequence.length - 2; t >= 0; t--) {
-          for(int i = 0; i < tranMatrix.length; i++) {
-            double sum = 0;
-            for(int j = 0; j < tranMatrix.length; j++) {
-              sum += beta[t + 1][j]*emisMatrix[j][emissionSequence[t + 1]] * tranMatrix[i][j];
-            }
-            beta[t][i] = sum;
+        for(int i = 0; i < tranMatrix.length; i++) {
+          double sum = 0;
+          for(int j = 0; j < tranMatrix.length; j++) {
+            sum += beta[t + 1][j]*emisMatrix[j][emissionSequence[t + 1]]*tranMatrix[i][j];
           }
+          beta[t][i] = c[t] * sum;
         }
-        return beta;
       }
+      //System.out.println(printMatrix(beta));
+    }
 
-    static double[][][] calculateDiGamma() {
-      double[][][] diGamma = new double[emissionSequence.length][tranMatrix.length][tranMatrix.length];
-      double[][] alpha = calculateAlpha();
-      double[][] beta = calculateBeta();
+    static void calculateDiGamma() {
+      diGamma = new double[emissionSequence.length][tranMatrix.length][tranMatrix.length];
+
+      //System.out.println(printMatrix(alpha));
 
       for(int t = 0; t < emissionSequence.length - 1; t++) {
         for(int i = 0; i < tranMatrix.length; i++) {
@@ -121,13 +137,10 @@ public class Hmm3 {
           }
         }
       }
-
-      return diGamma;
     }
 
-    static double[][] calculateGamma() {
-      double[][] gamma = new double[emissionSequence.length][tranMatrix.length];
-      double[][][] diGamma = calculateDiGamma();
+    static void calculateGamma() {
+    gamma = new double[emissionSequence.length][tranMatrix.length];
       for(int t = 0; t < emissionSequence.length; t++) {
         for(int i = 0; i < tranMatrix.length; i++) {
           double sum = 0;
@@ -137,13 +150,16 @@ public class Hmm3 {
           gamma[t][i] = sum;
         }
       }
-      return gamma;
+
     }
 
     static double[][] estimateTransitionMatrix() {
       double[][] transitionMatrix = new double[tranMatrix.length][tranMatrix[0].length];
-      double[][][] diGamma = calculateDiGamma();
-      double[][] gamma = calculateGamma();
+
+      calculateAlpha();
+      calculateBeta();
+      calculateDiGamma();
+      calculateGamma();
 
       for(int i = 0; i < transitionMatrix.length; i++) {
         for(int j = 0; j < transitionMatrix[0].length; j++) {
