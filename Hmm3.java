@@ -1,4 +1,6 @@
 import java.util.Scanner;
+import java.lang.Math;
+
 public class Hmm3 {
 
     static int tranMatrixRow, tranMatrixCol, emisMatrixRow, emisMatrixCol, initialStateRow, initialStateCol = 0;
@@ -7,6 +9,8 @@ public class Hmm3 {
     static double[][][] diGamma;
     static double[] c;
     static int[] emissionSequence;
+
+    static double oldLogProb = Double.NEGATIVE_INFINITY;
 
     static Scanner scanner = new Scanner(System.in);
 
@@ -77,7 +81,7 @@ public class Hmm3 {
         c[0] += alpha[0][i];
       }
 
-      c[0] = 1 / c[0];
+      c[0] = 1.0 / c[0];
       for(int i = 0; i < tranMatrix.length; i++) {
         alpha[0][i]*= c[0];
       }
@@ -85,102 +89,132 @@ public class Hmm3 {
       for(int t = 1; t < emissionSequence.length; t++) {
         c[t] = 0;
         for(int i = 0; i < tranMatrix.length; i++) {
-          double b = emisMatrix[i][emissionSequence[t]];
-          double sum = 0;
-
+          alpha[t][i] = 0;
           for(int j = 0; j < tranMatrix.length; j++) {
-            sum += tranMatrix[j][i]*alpha[t - 1][j];
+            alpha[t][i]+= alpha[t - 1][j]*tranMatrix[j][i];
           }
-          alpha[t][i] = b * sum;
+          alpha[t][i] = alpha[t][i]*emisMatrix[i][emissionSequence[t]];
           c[t] += alpha[t][i];
         }
-
-        c[t] = 1 / c[t];
-
+        c[t] = 1.0/c[t];
         for(int i = 0; i < tranMatrix.length; i++) {
-          alpha[t][i]*= c[t];
+          alpha[t][i] = c[t]*alpha[t][i];
         }
       }
     }
 
     static void calculateBeta() {
       beta = new double[emissionSequence.length][tranMatrix.length];
+
       for(int i = 0; i < tranMatrix.length; i++) {
         beta[emissionSequence.length - 1][i] = c[emissionSequence.length - 1];
       }
 
       for(int t = emissionSequence.length - 2; t >= 0; t--) {
         for(int i = 0; i < tranMatrix.length; i++) {
-          double sum = 0;
+          beta[t][i] = 0;
           for(int j = 0; j < tranMatrix.length; j++) {
-            sum += beta[t + 1][j]*emisMatrix[j][emissionSequence[t + 1]]*tranMatrix[i][j];
+            beta[t][i] += tranMatrix[i][j]*emisMatrix[j][emissionSequence[t + 1]]*beta[t + 1][j];
           }
-          beta[t][i] = c[t] * sum;
+          beta[t][i] = c[t]*beta[t][i];
         }
       }
-      //System.out.println(printMatrix(beta));
     }
 
-    static void calculateDiGamma() {
+    static void calculateGammas() {
+      gamma = new double[emissionSequence.length][tranMatrix.length];
       diGamma = new double[emissionSequence.length][tranMatrix.length][tranMatrix.length];
 
-      //System.out.println(printMatrix(alpha));
-
       for(int t = 0; t < emissionSequence.length - 1; t++) {
+        double denom = 0.0;
         for(int i = 0; i < tranMatrix.length; i++) {
           for(int j = 0; j < tranMatrix.length; j++) {
-            double sum = 0;
-            for(int k = 0; k < tranMatrix.length; k++) {
-              sum += alpha[emissionSequence.length - 1][k];
-            }
-            diGamma[t][i][j] = (alpha[t][i]*tranMatrix[i][j]*emisMatrix[j][emissionSequence[t + 1]] * beta[t + 1][j]) / sum;
+            denom += alpha[t][i]*tranMatrix[i][j]*emisMatrix[j][emissionSequence[t + 1]]*beta[t + 1][j];
           }
         }
-      }
-    }
-
-    static void calculateGamma() {
-    gamma = new double[emissionSequence.length][tranMatrix.length];
-      for(int t = 0; t < emissionSequence.length; t++) {
         for(int i = 0; i < tranMatrix.length; i++) {
-          double sum = 0;
+          gamma[t][i] = 0.0;
           for(int j = 0; j < tranMatrix.length; j++) {
-            sum += diGamma[t][i][j];
+            diGamma[t][i][j] = (alpha[t][i]*tranMatrix[i][j]*emisMatrix[j][emissionSequence[t + 1]]*beta[t + 1][j])/denom;
+            gamma[t][i] += diGamma[t][i][j];
           }
-          gamma[t][i] = sum;
         }
       }
 
+      //spshl case
+      double denom = 0;
+      for(int i = 0; i < tranMatrix.length; i++) {
+        denom += alpha[emissionSequence.length - 1][i];
+      }
+      for(int i = 0; i < tranMatrix.length; i++) {
+        gamma[emissionSequence.length - 1][i] = (alpha[emissionSequence.length - 1][i]) / denom;
+      }
     }
 
-    static double[][] estimateTransitionMatrix() {
-      double[][] transitionMatrix = new double[tranMatrix.length][tranMatrix[0].length];
-
-      calculateAlpha();
-      calculateBeta();
-      calculateDiGamma();
-      calculateGamma();
-
-      for(int i = 0; i < transitionMatrix.length; i++) {
-        for(int j = 0; j < transitionMatrix[0].length; j++) {
-          double sum1 = 0;
-          double sum2 = 0;
-          for(int t = 0; t < emissionSequence.length - 1; t++) {
-            sum1 += diGamma[t][i][j];
-            sum2 += gamma[t][i];
-          }
-          transitionMatrix[i][j] = sum1/sum2;
-        }
+    static double calculateLog() {
+      double logProb = 0;
+      for(int i = 0; i < emissionSequence.length; i++) {
+        logProb += Math.log(c[i]);
       }
 
-      return transitionMatrix;
+      return -logProb;
     }
 
-    static double[][] estimateEmissionMatrix() {
+    static void baum_welch() {
+      while(true) {
+        calculateAlpha();
+        calculateBeta();
+        calculateGammas();
+        reestimate();
 
-      return new double[1][1];
+        double logProb = calculateLog();
 
-    }
+        if(logProb > oldLogProb) {
+          oldLogProb = logProb;
+          continue;
+        }
+        else {
+          break;
+        }
+
+
+      }
+     }
+
+     static void reestimate() {
+
+       // RE ESTIMATE PI
+       for(int i = 0; i < tranMatrix.length; i++) {
+         initialStateMatrix[0][i] = gamma[0][i];
+       }
+       // RE ESTIMATE A
+       for(int i = 0; i < tranMatrix.length; i++) {
+         for(int j = 0; j < tranMatrix.length; j++) {
+           double numer = 0;
+           double denom = 0;
+
+           for(int t = 0; t < emissionSequence.length - 1; t++) {
+             numer += diGamma[t][i][j];
+             denom += gamma[t][i];
+           }
+           tranMatrix[i][j] = numer/denom;
+         }
+       }
+       // RE ESTIMATE B
+       for(int i = 0; i < tranMatrix.length; i++) {
+         for(int j = 0; j < emisMatrix[0].length; j++) {
+           double numer = 0;
+           double denom = 0;
+           for(int t = 0; t < tranMatrix.length; t++) {
+             if(emissionSequence[t] == j) {
+               numer += gamma[t][i];
+             }
+             denom += gamma[t][i];
+           }
+           emisMatrix[i][j] = numer/denom;
+         }
+       }
+     }
 
     public static void main(String args[]) {
         readInput();
@@ -188,6 +222,11 @@ public class Hmm3 {
         //System.out.println(printMatrix(test));
         // double[][] result = matrixMult(test, emisMatrix);
         //System.out.println(result.length + " " + result[0].length + " " + printMatrix(result));
-        System.out.println(printMatrix(estimateTransitionMatrix()));
+
+
+        baum_welch();
+
+        System.out.println(printMatrix(tranMatrix));
+        System.out.println(printMatrix(emisMatrix));
     }
 }
