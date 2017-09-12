@@ -93,7 +93,7 @@ public class Hmm3 {
         beta[beta.length - 1][i] = 1;
       }
 
-      for(int t = emissionSequence.length - 1; t >= 0; t++) {
+      for(int t = emissionSequence.length - 2; t >= 0; t--) {
           for(int i = 0; i < tranMatrix.length; i++) {
             double sum = 0;
             for(int j = 0; j < tranMatrix.length; j++) {
@@ -110,7 +110,7 @@ public class Hmm3 {
       double[][] alpha = calculateAlpha();
       double[][] beta = calculateBeta();
 
-      for(int t = 0; t < emissionSequence.length; t++) {
+      for(int t = 0; t < emissionSequence.length - 1; t++) {
         for(int i = 0; i < tranMatrix.length; i++) {
           for(int j = 0; j < tranMatrix.length; j++) {
             double sum = 0;
@@ -157,7 +157,7 @@ public class Hmm3 {
         }
       }
 
-      return estimateTransitionMatrix();
+      return transitionMatrix;
     }
 
     static double[][] estimateEmissionMatrix() {
