@@ -71,7 +71,7 @@ class Hmm4 {
 
     // compute alpha[0][i]
     c[0] = 0;
-    for (int i; i < N; i++) {
+    for (int i = 0; i < N; i++) {
       alpha[0][i] = pi[0][i] * B[i][O[0]];
       c[0] += alpha[0][i];
     }
@@ -99,6 +99,36 @@ class Hmm4 {
         alpha[t][i] = c[t] * alpha[t][i];
       }
     }
+  }
+
+  public static void gamma_pass() {
+    digamma = new double[T][N][N];
+    gamma = new double[T][N];
+
+    for(int t = 0; t < T - 1; t++) {
+      double denom = 0;
+      for(int i = 0; to i < N; i++) {
+        for(int j = 0; j < N; j++) {
+          denom = denom + alpha[t][i] * A[i][j] * B[j][O[t + 1]] * beta[t + 1][j];
+        }
+      }
+      for(int i = 0; i < N; i++) {
+        gamma[t][i] = 0;
+        for(int j = 0; j < N; j++) {
+          digamma[t][i][j] = (alpha[t][i] * A[i][j] * B[j][O[t + 1]] * beta[t + 1][j])/denom;
+          gamma[t][i] = gamma[t][i] + digamma[t][i][j];
+        }
+      }
+    }
+
+    double denom = 0;
+    for(int i = 0; i < N; i++) {
+      denom = denom + alpha[T - 1][i];
+    }
+    for(int i = 0; i < N; i++) {
+      gamma[T - 1][i] = alpha[T - 1][i] / denom;
+    }
+
   }
   public static void main(String[] args) {
     readInput();
