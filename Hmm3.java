@@ -11,9 +11,9 @@ public class Hmm3 {
     static int[] emissionSequence;
 
     static double oldLogProb = -999999999;
-    
+
     static int iters = 0;
-    static int maxIters = 1000; 
+    static int maxIters = 1000;
     static Scanner scanner = new Scanner(System.in);
 
     public static void readInput() {
@@ -98,7 +98,7 @@ public class Hmm3 {
           alpha[t][i] = alpha[t][i]*emisMatrix[i][emissionSequence[t]];
           c[t] = c[t] + alpha[t][i];
         }
-       
+
         c[t] = 1.0 / c[t];
         for(int i = 0; i < tranMatrix.length; i++) {
           alpha[t][i] = c[t]*alpha[t][i];
@@ -184,8 +184,6 @@ public class Hmm3 {
         else {
           break;
         }
-
-
       }
      }
 
