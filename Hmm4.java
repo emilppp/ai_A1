@@ -102,8 +102,24 @@ class Hmm4 {
   }
 
   public static void beta_pass() {
-    
+    // scaled by c[t-1]
+    for(int i = 0; i < N; i++) {
+        beta[T-1][i] = c[T-1];
+    }
+
+    // beta_pass
+    for(int t = T-2; t <= 0; t--) {
+        for(int i = 0; i < N; i++) {
+            beta[t][i] = 0;
+            for (int j = 0; j < N ; j++) {
+                beta[t][i] = beta[t][i] + A[i][j]*B[j][O[t+1]]*beta[t+1][j];
+            }
+            // scale beta with same factor
+            beta[t][i] = c[t]*B[t][i];
+        }
+    }
   }
+  
   public static void main(String[] args) {
     readInput();
   }
