@@ -71,7 +71,7 @@ class Hmm4 {
 
     // compute alpha[0][i]
     c[0] = 0;
-    for (int i; i < N; i++) {
+    for (int i = 0; i < N; i++) {
       alpha[0][i] = pi[0][i] * B[i][O[0]];
       c[0] += alpha[0][i];
     }
@@ -99,6 +99,10 @@ class Hmm4 {
         alpha[t][i] = c[t] * alpha[t][i];
       }
     }
+  }
+
+  public static void beta_pass() {
+    
   }
   public static void main(String[] args) {
     readInput();
