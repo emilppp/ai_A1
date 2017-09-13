@@ -101,36 +101,6 @@ class Hmm4 {
     }
   }
 
-<<<<<<< HEAD
-  public static void gamma_pass() {
-    digamma = new double[T][N][N];
-    gamma = new double[T][N];
-
-    for(int t = 0; t < T - 1; t++) {
-      double denom = 0;
-      for(int i = 0; to i < N; i++) {
-        for(int j = 0; j < N; j++) {
-          denom = denom + alpha[t][i] * A[i][j] * B[j][O[t + 1]] * beta[t + 1][j];
-        }
-      }
-      for(int i = 0; i < N; i++) {
-        gamma[t][i] = 0;
-        for(int j = 0; j < N; j++) {
-          digamma[t][i][j] = (alpha[t][i] * A[i][j] * B[j][O[t + 1]] * beta[t + 1][j])/denom;
-          gamma[t][i] = gamma[t][i] + digamma[t][i][j];
-        }
-      }
-    }
-
-    double denom = 0;
-    for(int i = 0; i < N; i++) {
-      denom = denom + alpha[T - 1][i];
-    }
-    for(int i = 0; i < N; i++) {
-      gamma[T - 1][i] = alpha[T - 1][i] / denom;
-    }
-
-=======
   public static void beta_pass() {
     // scaled by c[t-1]
     for(int i = 0; i < N; i++) {
@@ -148,7 +118,6 @@ class Hmm4 {
             beta[t][i] = c[t]*B[t][i];
         }
     }
->>>>>>> 982f1285dfb0a60a172bd8e39977fc5ac67c6ce7
   }
 
   public static void gamma_pass() {
