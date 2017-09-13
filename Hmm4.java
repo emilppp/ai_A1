@@ -1,9 +1,12 @@
 import java.util.Scanner;
+import java.lang.Math;
 
 class Hmm4 {
 
   //Lambda = {A, B, pi}
-  static double[][] A, B, pi, alpha, beta;
+  static double[][] A, B, pi, alpha, beta, gamma;
+
+  static double[][][] digamma;
 
   static int[] O;
 
@@ -29,7 +32,7 @@ class Hmm4 {
       scanner.nextInt();
       pi = generateMatrix(1, N);
 
-      int T = scanner.nextInt();
+      T = scanner.nextInt();
       O = new int[T];
 
       for(int i = 0; i < T; i++) {
@@ -68,7 +71,7 @@ class Hmm4 {
 
   public static void alpha_pass() {
     alpha = new double[T][N];
-
+    c = new double[T];
     // compute alpha[0][i]
     c[0] = 0;
     for (int i = 0; i < N; i++) {
@@ -102,6 +105,7 @@ class Hmm4 {
   }
 
   public static void beta_pass() {
+    beta = new double[T][N];
     // scaled by c[t-1]
     for(int i = 0; i < N; i++) {
         beta[T-1][i] = c[T-1];
@@ -126,7 +130,7 @@ class Hmm4 {
 
     for(int t = 0; t < T - 1; t++) {
       double denom = 0;
-      for(int i = 0; to i < N; i++) {
+      for(int i = 0; i < N; i++) {
         for(int j = 0; j < N; j++) {
           denom = denom + alpha[t][i] * A[i][j] * B[j][O[t + 1]] * beta[t + 1][j];
         }
@@ -150,7 +154,75 @@ class Hmm4 {
 
   }
 
+  public static void reestimate() {
+    //re estimate pi
+    for(int i = 0; i < N; i++) {
+      pi[0][i] = gamma[0][i];
+    }
+
+    //re estimate A
+    for(int i = 0; i < N; i++) {
+      for(int j = 0; j < N; j++) {
+        double numer = 0.0;
+        double denom = 0.0;
+        for(int t = 0; t < T - 1; t++) {
+          numer += digamma[t][i][j];
+          denom += gamma[t][i];
+        }
+        A[i][j] = numer/denom;
+      }
+    }
+
+    //re estimate B
+    for(int i = 0; i < N; i++) {
+      for(int j = 0; j < M; j++) {
+        double numer = 0.0;
+        double denom = 0.0;
+        for(int t = 0; t < T; t++) {
+          if(O[t] == j) {
+            numer += gamma[t][i];
+          }
+          denom += gamma[t][i];
+        }
+        B[i][j] = numer/denom;
+      }
+    }
+  }
+
+  public static double computeLog() {
+    double logProb = 0.0;
+    for(int i = 0; i < T; i++) {
+      logProb += Math.log(c[i]);
+    }
+    return -logProb;
+  }
+
+  public static void baum_welch() {
+    while(iters < 1000) {
+      iters++;
+      alpha_pass();
+      beta_pass();
+      gamma_pass();
+      reestimate();
+      double logProb = computeLog();
+      if(logProb > oldLogProb) {
+        oldLogProb = logProb;
+        
+        continue;
+      }
+      else {
+        
+        break;
+      } 
+    }
+  }
+
   public static void main(String[] args) {
     readInput();
+    baum_welch();
+
+    printMatrix(A);
+    printMatrix(B);
+    
   }
 }
