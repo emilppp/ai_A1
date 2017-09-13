@@ -14,7 +14,7 @@ class Hmm4 {
 
   static int N, M, T, iters;
 
-  static double oldLogProb;
+  static double oldLogProb = -Double.POSITIVE_INFINITY;
 
   static Scanner scanner = new Scanner(System.in);
 
@@ -58,12 +58,12 @@ class Hmm4 {
 
   public static void printMatrix(double[][] matrix) {
       String result = "";
+      System.out.print(matrix.length + " " + matrix[0].length +" ");
       for (int i = 0; i < matrix.length; i++) {
           for(int j = 0; j < matrix[0].length; j++) {
               //System.out.print(matrix[i][j] + " ");
               result += matrix[i][j] + " ";
           }
-          result += "\n";
           //System.out.print("\n");
       }
       System.out.println(result);
@@ -112,16 +112,18 @@ class Hmm4 {
     }
 
     // beta_pass
-    for(int t = T-2; t <= 0; t--) {
+    for(int t = T-2; t >= 0; t--) {
         for(int i = 0; i < N; i++) {
             beta[t][i] = 0;
             for (int j = 0; j < N ; j++) {
                 beta[t][i] = beta[t][i] + A[i][j]*B[j][O[t+1]]*beta[t+1][j];
             }
             // scale beta with same factor
-            beta[t][i] = c[t]*B[t][i];
+            beta[t][i] = c[t]*beta[t][i];
         }
     }
+    //printMatrix(beta);
+
   }
 
   public static void gamma_pass() {
@@ -198,7 +200,7 @@ class Hmm4 {
   }
 
   public static void baum_welch() {
-    while(iters < 1000) {
+    while(iters < 200) {
       iters++;
       alpha_pass();
       beta_pass();
@@ -207,13 +209,13 @@ class Hmm4 {
       double logProb = computeLog();
       if(logProb > oldLogProb) {
         oldLogProb = logProb;
-        
+
         continue;
       }
       else {
-        
+
         break;
-      } 
+      }
     }
   }
 
@@ -223,6 +225,6 @@ class Hmm4 {
 
     printMatrix(A);
     printMatrix(B);
-    
+
   }
 }
