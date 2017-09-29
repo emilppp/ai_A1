@@ -22,8 +22,6 @@ public class Hmm1 {
         }
     }
 
-
-
     public static double[][] generateMatrix(int rows, int columns) {
         double[][] matrix = new double[rows][columns];
 
